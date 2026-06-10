@@ -185,7 +185,7 @@ nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px 
   <button class="nav-btn" onclick="navTo('laporan',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Laporan</button>
 </nav>
 
-<button class="fab" onclick="openTrxModal()" id="fabBtn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+<button class="fab" id="fabBtn" onclick="openTrxModal()" style="display:flex;">+</button>
 
 <!-- MODAL TRANSAKSI -->
 <div class="modal-overlay" id="trxModal">
@@ -288,6 +288,31 @@ function fmt(n) { const num=parseFloat(n||0); if(num<0) return "-"+fmt(-num); if
 function showToast(msg,type="info") { const t=document.getElementById("toast"); t.textContent=msg; t.className=`toast show ${type}`; setTimeout(()=>t.classList.remove("show"),2500); }
 
 // ============================================================
+// NAVIGASI & FAB CONTROL
+// ============================================================
+function navTo(page, btn) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("page-"+page).classList.add("active");
+  if (btn) btn.classList.add("active");
+  const fab = document.getElementById("fabBtn");
+  if (page === "beranda" || page === "transaksi") {
+    fab.style.display = "flex";
+  } else {
+    fab.style.display = "none";
+  }
+  if (page === "transaksi") loadTransaksi();
+  if (page === "akun") loadAkunPage();
+  if (page === "anggaran") loadAnggaran();
+  if (page === "laporan") loadLaporan();
+}
+function openModal(id){ document.getElementById(id).classList.add("open"); }
+function closeModal(id){ document.getElementById(id).classList.remove("open"); }
+document.querySelectorAll(".modal-overlay").forEach(m => {
+  m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); });
+});
+
+// ============================================================
 // BERANDA
 // ============================================================
 async function loadBeranda() {
@@ -330,7 +355,6 @@ async function loadTransaksi() {
     if (filterKat) filtered = filtered.filter(t => t.Kategori===filterKat);
     if (search) filtered = filtered.filter(t => (t.Keterangan||"").toLowerCase().includes(search) || (t.Kategori||"").toLowerCase().includes(search));
     renderTrxList(filtered);
-    // populate filter dropdowns
     const akunOptions = '<option value="">Semua Akun</option>' + akunCache.map(a=>`<option value="${a.id}">${a.ikon} ${a.nama}</option>`).join('');
     document.getElementById("filterAkun").innerHTML = akunOptions;
     const katSet = new Set(); allTrxData.forEach(t=>{ if(t.Kategori) katSet.add(t.Kategori); });
@@ -441,18 +465,15 @@ async function saveAnggaran(){ const {bulan,tahun}=getPeriod("3"); const periode
 // LAPORAN & EXPORT
 // ============================================================
 async function loadLaporan(){ const tahun=document.getElementById("selTahunL").value; document.getElementById("laporanContent").innerHTML=`<div class="loading"><div class="spinner"></div>Memuat…</div>`; try{ const res=await apiGet({action:"getLaporan",tahun}); renderLaporan(res.data,tahun); }catch(e){ document.getElementById("laporanContent").innerHTML=`<div class="empty"><div class="emoji">⚠️</div><p>${e.message}</p></div>`; } }
-function renderLaporan(data, tahun) {
+function renderLaporan(data,tahun) {
   const bln = data.bulanan;
   const masuk = Object.values(bln).map(b => b.pemasukan);
   const keluar = Object.values(bln).map(b => b.pengeluaran);
   const totalIn = masuk.reduce((a,b) => a+b, 0);
   const totalOut = keluar.reduce((a,b) => a+b, 0);
   const labels = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
-  
   document.getElementById("laporanContent").innerHTML = `
-    <div class="card">
-      <div class="chart-wrap" style="height:200px;"><canvas id="chartLaporan"></canvas></div>
-    </div>
+    <div class="card"><div class="chart-wrap" style="height:200px;"><canvas id="chartLaporan"></canvas></div></div>
     <div class="card">
       <div class="laporan-stat" style="display:flex;justify-content:space-between;padding:8px 0;"><span>Total Pemasukan</span><span class="green">${fmt(totalIn)}</span></div>
       <div class="laporan-stat" style="display:flex;justify-content:space-between;padding:8px 0;"><span>Total Pengeluaran</span><span class="red">${fmt(totalOut)}</span></div>
@@ -462,7 +483,6 @@ function renderLaporan(data, tahun) {
       <div class="laporan-stat" style="display:flex;justify-content:space-between;padding:8px 0;"><span>Rasio Tabungan</span><span>${totalIn>0 ? Math.round(((totalIn-totalOut)/totalIn)*100) : 0}%</span></div>
     </div>
   `;
-  
   setTimeout(() => {
     const ctx = document.getElementById("chartLaporan").getContext("2d");
     if (chartLine) chartLine.destroy();
@@ -478,9 +498,7 @@ function renderLaporan(data, tahun) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: { labels: { color: "#94a3b8" } }
-        },
+        plugins: { legend: { labels: { color: "#94a3b8" } } },
         scales: {
           x: { ticks: { color: "#64748b" } },
           y: {
@@ -498,16 +516,7 @@ function renderLaporan(data, tahun) {
     });
   }, 100);
 }
-
 async function exportCSV(){ const tahun=document.getElementById("selTahunL").value; try{ const res=await apiGet({action:"getTransaksi",tahun}); const data=res.data||[]; if(!data.length){ showToast("Tidak ada data untuk diekspor","error"); return; } const headers=["ID","Tanggal","Tipe","Kategori","Keterangan","Jumlah","AkunDari","AkunKe"]; const rows=data.map(t=>[t.ID,t.Tanggal,t.Tipe,t.Kategori,t.Keterangan,t.Jumlah,t.AkunDari,t.AkunKe]); const csvContent=[headers,...rows].map(row=>row.map(cell=>`"${cell}"`).join(",")).join("\n"); const blob=new Blob([csvContent],{type:"text/csv"}); const link=document.createElement("a"); link.href=URL.createObjectURL(blob); link.download=`transaksi_${tahun}.csv`; link.click(); showToast("Export CSV berhasil","success"); }catch(e){ showToast(e.message,"error"); } }
-
-// ============================================================
-// NAVIGATION & MODALS
-// ============================================================
-function navTo(page,btn){ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active")); document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active")); document.getElementById("page-"+page).classList.add("active"); if(btn) btn.classList.add("active"); document.getElementById("fabBtn").style.display=["beranda","transaksi"].includes(page)?"flex":"none"; if(page==="transaksi") loadTransaksi(); if(page==="akun") loadAkunPage(); if(page==="anggaran") loadAnggaran(); if(page==="laporan") loadLaporan(); }
-function openModal(id){ document.getElementById(id).classList.add("open"); }
-function closeModal(id){ document.getElementById(id).classList.remove("open"); }
-document.querySelectorAll(".modal-overlay").forEach(m=>{ m.addEventListener("click",e=>{ if(e.target===m) m.classList.remove("open"); }); });
 </script>
 </div>
 </body>

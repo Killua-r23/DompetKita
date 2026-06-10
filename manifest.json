@@ -1,6 +1,6 @@
 {
   "name": "Keuangan Keluarga",
-  "short_name": "KeuKeluarga",
+  "short_name": "myFinance",
   "description": "Aplikasi pencatatan keuangan keluarga",
   "start_url": "./index.html",
   "display": "standalone",

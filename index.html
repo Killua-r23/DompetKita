@@ -213,7 +213,35 @@ nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px 
 <div class="modal-overlay" id="anggaranModal"><div class="modal"><button class="modal-close" onclick="closeModal('anggaranModal')">✕</button><h2>Atur Anggaran</h2><div class="fg"><label>Kategori</label><select id="angKategori"></select></div><div class="fg"><label>Batas Pengeluaran (Rp)</label><input type="number" id="angBatas" placeholder="0" min="0"></div><button class="btn btn-primary" onclick="saveAnggaran()">Simpan Anggaran</button></div></div>
 
 <!-- MODAL AKUN -->
-<div class="modal-overlay" id="akunModal"><div class="modal"><button class="modal-close" onclick="closeModal('akunModal')">✕</button><h2 id="akunModalTitle">Tambah Akun Dana</h2><input type="hidden" id="akunEditId"><div class="fg"><label>Nama Akun</label><input type="text" id="akunNama"></div><div class="fg"><label>Tipe</label><select id="akunTipe"><option value="bank">🏦 Bank</option><option value="ewallet">📱 E-Wallet</option><option value="cash">💵 Tunai</option><option value="investasi">📈 Investasi</option></select></div><div class="fg"><label>Ikon</label><select id="akunIkon"><option value="🏦">🏦 Bank</option><option value="💳">💳 Kartu</option><option value="💵">💵 Tunai</option><option value="📱">📱 E-Wallet</option><option value="💚">💚 GoPay</option></select></div><div class="fg"><label>Warna</label><input type="color" id="akunWarna" value="#10b981"></div><div class="fg"><label>Saldo Awal</label><input type="number" id="akunSaldo" value="0"></div><button class="btn btn-primary" onclick="saveAkun()">Simpan Akun</button><button class="btn btn-danger" id="btnHapusAkun" style="display:none;" onclick="hapusAkun()">Hapus Akun Ini</button></div></div>
+<div class="modal-overlay" id="akunModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('akunModal')">✕</button>
+    <h2 id="akunModalTitle">Tambah Akun Dana</h2>
+    <input type="hidden" id="akunEditId"><div class="fg">
+      <label>Nama Akun</label>
+      <input type="text" id="akunNama"></div>
+      <div class="fg"><label>Tipe</label>
+        <select id="akunTipe">
+          <option value="bank">🏦 Bank</option>
+          <option value="ewallet">📱 E-Wallet</option>
+          <option value="cash">💵 Tunai</option>
+          <option value="investasi">📈 Investasi</option>
+          <option value="hutang">🤝 Hutang (Kewajiban)</option>
+<option value="piutang">💰 Piutang (Tagihan)</option>
+        </select></div><div class="fg"><label>Ikon</label>
+          <select id="akunIkon"><option value="🏦">🏦 Bank</option>
+            <option value="💳">💳 Kartu</option><option value="💵">💵 Tunai</option>
+            <option value="📱">📱 E-Wallet</option>
+            <option value="💚">💚 GoPay</option>
+          </select></div>
+          <div class="fg"><label>Warna</label>
+            <input type="color" id="akunWarna" value="#10b981">
+          </div><div class="fg"><label>Saldo Awal</label>
+            <input type="number" id="akunSaldo" value="0">
+          </div><button class="btn btn-primary" onclick="saveAkun()">Simpan Akun</button>
+          <button class="btn btn-danger" id="btnHapusAkun" style="display:none;" onclick="hapusAkun()">Hapus Akun Ini</button>
+        </div>
+      </div>
 
 <script>
 // ============================================================
@@ -230,8 +258,14 @@ let selectedAkunDari = null, selectedAkunKe = null;
 let editingTrxId = null;
 let chartLine = null;
 const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-const TIPE_AKUN = {"bank":"Bank","ewallet":"E-Wallet","cash":"Tunai","investasi":"Investasi"};
-
+const TIPE_AKUN = {
+  "bank": "🏦 Bank",
+  "ewallet": "📱 E-Wallet",
+  "cash": "💵 Tunai",
+  "investasi": "📈 Investasi",
+  "hutang": "🤝 Hutang (Kewajiban)",
+  "piutang": "💰 Piutang (Tagihan)"
+};
 // ============================================================
 // INIT & SETUP
 // ============================================================
@@ -324,18 +358,55 @@ async function loadBeranda() {
     renderBeranda(resSummary.data, akunCache, bulan, tahun);
   } catch(e) { document.getElementById("berandaContent").innerHTML=`<div class="empty"><div class="emoji">⚠️</div><p>${e.message}</p></div>`; }
 }
-function renderBeranda(d, saldoAkun, bulan, tahun) {
-  const totalSaldo = saldoAkun.reduce((s,a)=>s+a.saldo,0);
-  let akunHtml = `<div class="akun-scroll">`;
-  saldoAkun.forEach(a => { akunHtml += `<div class="akun-chip" style="background:${a.warna}22;border:1.5px solid ${a.warna}44;" onclick="navTo('akun',null)"><div class="ac-ikon">${a.ikon}</div><div class="ac-nama">${a.nama}</div><div class="ac-tipe">${TIPE_AKUN[a.tipe]||a.tipe}</div><div class="ac-saldo" style="color:${a.warna};">${fmt(a.saldo)}</div></div>`; });
-  akunHtml += `<div class="akun-add" onclick="openAkunModal()"><span style="font-size:24px;">＋</span><span>Tambah Akun</span></div></div>`;
-  let topKat = Object.entries(d.perKategori).sort((a,b)=>b[1]-a[1]).slice(0,4);
-  let html = akunHtml + `<div class="sg"><div class="sc wide"><div class="lbl">💼 Total Semua Akun</div><div class="val ${totalSaldo>=0?'green':'red'}">${fmt(totalSaldo)}</div></div><div class="sc"><div class="lbl">📥 Pemasukan</div><div class="val green">${fmt(d.pemasukan)}</div></div><div class="sc"><div class="lbl">📤 Pengeluaran</div><div class="val red">${fmt(d.pengeluaran)}</div></div><div class="sc wide"><div class="lbl">💰 Selisih ${MONTHS[bulan-1]}</div><div class="val ${d.saldo>=0?'green':'red'}">${fmt(d.saldo)}</div></div></div>`;
-  if (topKat.length) { html += `<div class="st" style="margin-top:10px;"><span>Top Pengeluaran</span></div>`; topKat.forEach(([kat,jml]) => { const p = d.pengeluaran>0?Math.round((jml/d.pengeluaran)*100):0; html += `<div class="budget-item"><div class="head" style="display:flex;justify-content:space-between;"><div class="cn">📦 ${kat}</div><div class="am">${fmt(jml)} (${p}%)</div></div><div class="pb"><div class="fill ok" style="width:${p}%;"></div></div></div>`; }); }
-  if (d.recent && d.recent.length) { html += `<div class="st" style="display:flex;justify-content:space-between;"><span>Transaksi Terakhir</span><span class="sa" style="color:var(--indigo-l);cursor:pointer;" onclick="navTo('transaksi',null)">Lihat Semua →</span></div>`; d.recent.forEach(t => { html += renderTrxItem(t, false); }); }
-  document.getElementById("berandaContent").innerHTML = html;
-}
 
+function renderBeranda(d, saldoAkun, bulan, tahun) {
+  const totalSemuaAkun = saldoAkun.reduce((s,a)=>s+a.saldo,0);
+  const aset = saldoAkun.filter(a => a.tipe === "cash" || a.tipe === "bank" || a.tipe === "ewallet" || a.tipe === "investasi" || a.tipe === "piutang");
+  const hutang = saldoAkun.filter(a => a.tipe === "hutang");
+  const totalAset = aset.reduce((s,a)=>s+a.saldo,0);
+  const totalHutang = hutang.reduce((s,a)=>s+a.saldo,0);
+  const kekayaanBersih = totalAset - totalHutang;
+  
+  let akunHtml = `<div class="akun-scroll">`;
+  saldoAkun.forEach(a => { 
+    akunHtml += `<div class="akun-chip" style="background:${a.warna}22;border:1.5px solid ${a.warna}44;" onclick="navTo('akun',null)"><div class="ac-ikon">${a.ikon}</div><div class="ac-nama">${a.nama}</div><div class="ac-tipe">${TIPE_AKUN[a.tipe]||a.tipe}</div><div class="ac-saldo" style="color:${a.warna};">${fmt(a.saldo)}</div></div>`; 
+  });
+  akunHtml += `<div class="akun-add" onclick="openAkunModal()"><span style="font-size:24px;">＋</span><span>Tambah Akun</span></div></div>`;
+  
+  let ringkasanHtml = `
+    <div class="sg">
+      <div class="sc wide"><div class="lbl">💼 Total Semua Akun</div><div class="val ${totalSemuaAkun>=0?'green':'red'}">${fmt(totalSemuaAkun)}</div></div>
+    </div>
+    <div class="sg">
+      <div class="sc"><div class="lbl">🏦 Total Aset</div><div class="val green">${fmt(totalAset)}</div></div>
+      <div class="sc"><div class="lbl">🤝 Total Hutang</div><div class="val" style="color:#f97316;">${fmt(totalHutang)}</div></div>
+      <div class="sc wide"><div class="lbl">💰 Kekayaan Bersih</div><div class="val ${kekayaanBersih>=0?'green':'red'}">${fmt(kekayaanBersih)}</div></div>
+    </div>
+    <div class="sg">
+      <div class="sc"><div class="lbl">📥 Pemasukan</div><div class="val green">${fmt(d.pemasukan)}</div></div>
+      <div class="sc"><div class="lbl">📤 Pengeluaran</div><div class="val red">${fmt(d.pengeluaran)}</div></div>
+      <div class="sc wide"><div class="lbl">💰 Selisih ${MONTHS[bulan-1]}</div><div class="val ${d.saldo>=0?'green':'red'}">${fmt(d.saldo)}</div></div>
+    </div>
+  `;
+  
+  let topKatHtml = "";
+  let topKat = Object.entries(d.perKategori).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  if (topKat.length) {
+    topKatHtml = `<div class="st" style="margin-top:10px;"><span>Top Pengeluaran</span></div>`;
+    topKat.forEach(([kat,jml]) => { 
+      const p = d.pengeluaran>0?Math.round((jml/d.pengeluaran)*100):0; 
+      topKatHtml += `<div class="budget-item"><div class="head" style="display:flex;justify-content:space-between;"><div class="cn">📦 ${kat}</div><div class="am">${fmt(jml)} (${p}%)</div></div><div class="pb"><div class="fill ok" style="width:${p}%;"></div></div></div>`; 
+    });
+  }
+  
+  let recentHtml = "";
+  if (d.recent && d.recent.length) { 
+    recentHtml = `<div class="st" style="display:flex;justify-content:space-between;"><span>Transaksi Terakhir</span><span class="sa" style="color:var(--indigo-l);cursor:pointer;" onclick="navTo('transaksi',null)">Lihat Semua →</span></div>`;
+    d.recent.forEach(t => { recentHtml += renderTrxItem(t, false); });
+  }
+  
+  document.getElementById("berandaContent").innerHTML = akunHtml + ringkasanHtml + topKatHtml + recentHtml;
+}
 // ============================================================
 // TRANSAKSI
 // ============================================================

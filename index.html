@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Keuangan Keluarga</title>
+<title>Keuangan Keluarga - Hutang & Piutang</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#6366f1">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -154,7 +154,7 @@ nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px 
 </div>
 
 <div class="page" id="page-akun">
-  <div class="page-header"><h1>Akun Dana</h1><p>Kelola rekening & dompet</p></div>
+  <div class="page-header"><h1>Akun Dana</h1><p>Termasuk Hutang & Piutang</p></div>
   <div id="akunList"></div>
   <button class="btn btn-primary" onclick="openAkunModal()">+ Tambah Akun</button>
   <div class="st" style="margin-top:20px; display:flex; justify-content:space-between;"><span>Kategori</span><span class="sa" style="color:var(--indigo-l); cursor:pointer;" onclick="openKategoriModal()">Kelola</span></div>
@@ -213,35 +213,7 @@ nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px 
 <div class="modal-overlay" id="anggaranModal"><div class="modal"><button class="modal-close" onclick="closeModal('anggaranModal')">✕</button><h2>Atur Anggaran</h2><div class="fg"><label>Kategori</label><select id="angKategori"></select></div><div class="fg"><label>Batas Pengeluaran (Rp)</label><input type="number" id="angBatas" placeholder="0" min="0"></div><button class="btn btn-primary" onclick="saveAnggaran()">Simpan Anggaran</button></div></div>
 
 <!-- MODAL AKUN -->
-<div class="modal-overlay" id="akunModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('akunModal')">✕</button>
-    <h2 id="akunModalTitle">Tambah Akun Dana</h2>
-    <input type="hidden" id="akunEditId"><div class="fg">
-      <label>Nama Akun</label>
-      <input type="text" id="akunNama"></div>
-      <div class="fg"><label>Tipe</label>
-        <select id="akunTipe">
-          <option value="bank">🏦 Bank</option>
-          <option value="ewallet">📱 E-Wallet</option>
-          <option value="cash">💵 Tunai</option>
-          <option value="investasi">📈 Investasi</option>
-          <option value="hutang">🤝 Hutang (Kewajiban)</option>
-<option value="piutang">💰 Piutang (Tagihan)</option>
-        </select></div><div class="fg"><label>Ikon</label>
-          <select id="akunIkon"><option value="🏦">🏦 Bank</option>
-            <option value="💳">💳 Kartu</option><option value="💵">💵 Tunai</option>
-            <option value="📱">📱 E-Wallet</option>
-            <option value="💚">💚 GoPay</option>
-          </select></div>
-          <div class="fg"><label>Warna</label>
-            <input type="color" id="akunWarna" value="#10b981">
-          </div><div class="fg"><label>Saldo Awal</label>
-            <input type="number" id="akunSaldo" value="0">
-          </div><button class="btn btn-primary" onclick="saveAkun()">Simpan Akun</button>
-          <button class="btn btn-danger" id="btnHapusAkun" style="display:none;" onclick="hapusAkun()">Hapus Akun Ini</button>
-        </div>
-      </div>
+<div class="modal-overlay" id="akunModal"><div class="modal"><button class="modal-close" onclick="closeModal('akunModal')">✕</button><h2 id="akunModalTitle">Tambah Akun Dana</h2><input type="hidden" id="akunEditId"><div class="fg"><label>Nama Akun</label><input type="text" id="akunNama"></div><div class="fg"><label>Tipe</label><select id="akunTipe"><option value="bank">🏦 Bank</option><option value="ewallet">📱 E-Wallet</option><option value="cash">💵 Tunai</option><option value="investasi">📈 Investasi</option><option value="hutang">🤝 Hutang (Kewajiban)</option><option value="piutang">💰 Piutang (Tagihan)</option></select></div><div class="fg"><label>Ikon</label><select id="akunIkon"><option value="🏦">🏦 Bank</option><option value="💳">💳 Kartu</option><option value="💵">💵 Tunai</option><option value="📱">📱 E-Wallet</option><option value="💚">💚 GoPay</option><option value="🤝">🤝 Hutang</option><option value="💰">💰 Piutang</option></select></div><div class="fg"><label>Warna</label><input type="color" id="akunWarna" value="#10b981"></div><div class="fg"><label>Saldo Awal</label><input type="number" id="akunSaldo" value="0"></div><button class="btn btn-primary" onclick="saveAkun()">Simpan Akun</button><button class="btn btn-danger" id="btnHapusAkun" style="display:none;" onclick="hapusAkun()">Hapus Akun Ini</button></div></div>
 
 <script>
 // ============================================================
@@ -266,6 +238,7 @@ const TIPE_AKUN = {
   "hutang": "🤝 Hutang (Kewajiban)",
   "piutang": "💰 Piutang (Tagihan)"
 };
+
 // ============================================================
 // INIT & SETUP
 // ============================================================
@@ -347,7 +320,7 @@ document.querySelectorAll(".modal-overlay").forEach(m => {
 });
 
 // ============================================================
-// BERANDA
+// BERANDA (dengan ringkasan hutang/piutang & kekayaan bersih)
 // ============================================================
 async function loadBeranda() {
   const {bulan,tahun}=getPeriod();
@@ -358,7 +331,6 @@ async function loadBeranda() {
     renderBeranda(resSummary.data, akunCache, bulan, tahun);
   } catch(e) { document.getElementById("berandaContent").innerHTML=`<div class="empty"><div class="emoji">⚠️</div><p>${e.message}</p></div>`; }
 }
-
 function renderBeranda(d, saldoAkun, bulan, tahun) {
   const totalSemuaAkun = saldoAkun.reduce((s,a)=>s+a.saldo,0);
   const aset = saldoAkun.filter(a => a.tipe === "cash" || a.tipe === "bank" || a.tipe === "ewallet" || a.tipe === "investasi" || a.tipe === "piutang");
@@ -378,9 +350,9 @@ function renderBeranda(d, saldoAkun, bulan, tahun) {
       <div class="sc wide"><div class="lbl">💼 Total Semua Akun</div><div class="val ${totalSemuaAkun>=0?'green':'red'}">${fmt(totalSemuaAkun)}</div></div>
     </div>
     <div class="sg">
-      <div class="sc"><div class="lbl">🏦 Total Aset</div><div class="val green">${fmt(totalAset)}</div></div>
+      <div class="sc"><div class="lbl">🏦 Total Aset (Kas+Bank+Piutang)</div><div class="val green">${fmt(totalAset)}</div></div>
       <div class="sc"><div class="lbl">🤝 Total Hutang</div><div class="val" style="color:#f97316;">${fmt(totalHutang)}</div></div>
-      <div class="sc wide"><div class="lbl">💰 Kekayaan Bersih</div><div class="val ${kekayaanBersih>=0?'green':'red'}">${fmt(kekayaanBersih)}</div></div>
+      <div class="sc wide"><div class="lbl">💰 Kekayaan Bersih (Aset - Hutang)</div><div class="val ${kekayaanBersih>=0?'green':'red'}">${fmt(kekayaanBersih)}</div></div>
     </div>
     <div class="sg">
       <div class="sc"><div class="lbl">📥 Pemasukan</div><div class="val green">${fmt(d.pemasukan)}</div></div>
@@ -407,8 +379,9 @@ function renderBeranda(d, saldoAkun, bulan, tahun) {
   
   document.getElementById("berandaContent").innerHTML = akunHtml + ringkasanHtml + topKatHtml + recentHtml;
 }
+
 // ============================================================
-// TRANSAKSI
+// TRANSAKSI (sama seperti sebelumnya, tidak perlu diubah)
 // ============================================================
 async function loadTransaksi() {
   const {bulan,tahun}=getPeriod("2");
@@ -505,36 +478,38 @@ async function saveTrx(){
 }
 
 // ============================================================
-// AKUN PAGE
+// AKUN PAGE (menampilkan semua akun termasuk hutang/piutang)
 // ============================================================
 async function loadAkunPage(){ await loadAkunCache(); const el=document.getElementById("akunList"); if(!akunCache.length){ el.innerHTML=`<div class="empty"><div class="emoji">🏦</div><p>Belum ada akun</p></div>`; return; } const totalSaldo=akunCache.reduce((s,a)=>s+a.saldo,0); let html=`<div class="sc wide"><div class="lbl">Total Semua Akun</div><div class="val ${totalSaldo>=0?'green':'red'}">${fmt(totalSaldo)}</div></div>`; akunCache.forEach(a=>{ html+=`<div class="card" style="margin-bottom:10px;border-left:3px solid ${a.warna};"><div style="display:flex;align-items:center;gap:12px;"><div style="font-size:32px;">${a.ikon}</div><div style="flex:1;"><div style="font-size:15px;font-weight:700;">${a.nama}</div><div style="font-size:11px;color:var(--text3);">${TIPE_AKUN[a.tipe]||a.tipe}</div></div><div style="text-align:right;"><div style="font-size:18px;font-weight:800;color:${a.saldo<0?'var(--rose)':a.warna};">${fmt(a.saldo)}</div><button onclick="editAkun('${a.id}')" style="font-size:11px;margin-top:4px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Edit</button></div></div></div>`; }); el.innerHTML=html; await loadKategoriDisplay(); loadRecurringList(); }
 async function loadKategoriDisplay(){ const res=await apiGet({action:"getKategori"}); const kats=res.data||[]; const outKats=kats.filter(k=>k.Tipe==="pengeluaran"); const inKats=kats.filter(k=>k.Tipe==="pemasukan"); document.getElementById("kategoriList").innerHTML=`<div class="card"><div style="font-size:12px;font-weight:600;">📤 Pengeluaran</div>${outKats.map(k=>`<div style="display:flex;justify-content:space-between;margin-top:6px;"><span>${k.Ikon||"📦"} ${k.Nama}</span><button onclick="editKategori('${k.Tipe}','${k.Nama}')" style="background:none;border:none;color:var(--text3);cursor:pointer;">✏️</button></div>`).join("")}</div><div class="card" style="margin-top:8px;"><div style="font-size:12px;font-weight:600;">📥 Pemasukan</div>${inKats.map(k=>`<div style="display:flex;justify-content:space-between;margin-top:6px;"><span>${k.Ikon||"💰"} ${k.Nama}</span><button onclick="editKategori('${k.Tipe}','${k.Nama}')" style="background:none;border:none;color:var(--text3);cursor:pointer;">✏️</button></div>`).join("")}</div>`; }
 function openKategoriModal(){ loadKategoriDisplay(); openModal("kategoriModal"); }
 async function addNewKategori(){ const nama=document.getElementById("newKatNama").value.trim(); const tipe=document.getElementById("newKatTipe").value; if(!nama){ showToast("Nama kategori harus diisi","error"); return; } try{ await apiPost({action:"addKategori",data:{tipe,nama,ikon:"📦"}}); await loadKategori(); await loadKategoriDisplay(); showToast("Kategori ditambahkan","success"); document.getElementById("newKatNama").value=""; }catch(e){ showToast(e.message,"error"); } }
 function editKategori(tipe,nama){ const newNama=prompt("Edit nama kategori:",nama); if(newNama && newNama!==nama){ apiPost({action:"updateKategori",oldNama:nama,data:{tipe,nama:newNama,ikon:"📦"}}).then(()=>{ loadKategori(); loadKategoriDisplay(); showToast("Kategori diupdate","success"); }); } }
-// RECURRING
+
+// ============================================================
+// RECURRING (sama)
+// ============================================================
 async function loadRecurringList(){ const res=await apiGet({action:"getRecurring"}); const list=res.data||[]; const html=list.map(r=>`<div class="recur-item" style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3);border-radius:8px;margin-bottom:8px;"><div><strong>${r.Nama}</strong> (${r.Tipe==="pengeluaran"?"keluar":"masuk"}) ${fmt(r.Jumlah)}</div><button onclick="deleteRecurring('${r.ID}')" style="background:none;border:none;color:var(--rose);cursor:pointer;">Hapus</button></div>`).join("")||"<div class='empty'>Belum ada transaksi berulang</div>"; document.getElementById("recurringList").innerHTML=html; if(document.getElementById("recurringListModal")) document.getElementById("recurringListModal").innerHTML=html; }
 async function deleteRecurring(id){ if(confirm("Hapus transaksi berulang?")){ await apiPost({action:"deleteRecurring",id}); loadRecurringList(); } }
 function openRecurringModal(){ document.getElementById("recName").value=""; document.getElementById("recJumlah").value=""; document.getElementById("recMulai").value=new Date().toISOString().split("T")[0]; document.getElementById("recKategori").innerHTML=getKategoriOptions(document.getElementById("recTipe").value); document.getElementById("recAkun").innerHTML=akunCache.map(a=>`<option value="${a.id}">${a.ikon} ${a.nama}</option>`).join(""); openModal("recurringModal"); }
 document.getElementById("recTipe")?.addEventListener("change",function(){ document.getElementById("recKategori").innerHTML=getKategoriOptions(this.value); });
 async function addRecurring(){ const data={ nama:document.getElementById("recName").value, tipe:document.getElementById("recTipe").value, jumlah:parseFloat(document.getElementById("recJumlah").value), kategori:document.getElementById("recKategori").value, akunDari:document.getElementById("recTipe").value==="pengeluaran"?document.getElementById("recAkun").value:"", akunKe:document.getElementById("recTipe").value==="pemasukan"?document.getElementById("recAkun").value:"", periode:"monthly", tanggalMulai:document.getElementById("recMulai").value }; if(!data.nama||!data.jumlah){ showToast("Lengkapi data","error"); return; } try{ await apiPost({action:"addRecurring",data}); showToast("Transaksi berulang disimpan","success"); closeModal("recurringModal"); loadRecurringList(); }catch(e){ showToast(e.message,"error"); } }
-// AKUN CRUD
+
+// ============================================================
+// AKUN CRUD (dengan tipe hutang/piutang)
+// ============================================================
 function openAkunModal(id=null){ document.getElementById("akunModalTitle").textContent=id?"Edit Akun Dana":"Tambah Akun Dana"; document.getElementById("akunEditId").value=id||""; document.getElementById("akunNama").value=""; document.getElementById("akunSaldo").value="0"; document.getElementById("akunTipe").value="bank"; document.getElementById("akunIkon").value="🏦"; document.getElementById("akunWarna").value="#10b981"; document.getElementById("btnHapusAkun").style.display=id?"block":"none"; if(id){ const a=akunCache.find(a=>a.id===id); if(a){ document.getElementById("akunNama").value=a.nama; document.getElementById("akunTipe").value=a.tipe; document.getElementById("akunIkon").value=a.ikon; document.getElementById("akunWarna").value=a.warna; document.getElementById("akunSaldo").value=0; } } openModal("akunModal"); }
 function editAkun(id){ openAkunModal(id); }
 async function saveAkun(){ const id=document.getElementById("akunEditId").value; const data={ nama:document.getElementById("akunNama").value.trim(), tipe:document.getElementById("akunTipe").value, ikon:document.getElementById("akunIkon").value, warna:document.getElementById("akunWarna").value, saldoAwal:parseFloat(document.getElementById("akunSaldo").value)||0 }; if(!data.nama){ showToast("Nama akun harus diisi","error"); return; } try{ const res=await apiPost(id?{action:"updateAkun",id,data}:{action:"addAkun",data}); if(!res.success) throw new Error(res.message); showToast(id?"Akun diperbarui ✓":"Akun ditambahkan ✓","success"); closeModal("akunModal"); await loadAkunCache(); loadAkunPage(); }catch(e){ showToast(e.message,"error"); } }
 async function hapusAkun(){ const id=document.getElementById("akunEditId").value; if(!id||!confirm("Hapus akun ini? Transaksi terkait tidak ikut terhapus.")) return; try{ const res=await apiPost({action:"deleteAkun",id}); if(!res.success) throw new Error(res.message); showToast("Akun dihapus","success"); closeModal("akunModal"); await loadAkunCache(); loadAkunPage(); }catch(e){ showToast(e.message,"error"); } }
 
 // ============================================================
-// ANGGARAN
+// ANGGARAN & LAPORAN (sama seperti sebelumnya)
 // ============================================================
 async function loadAnggaran(){ const {bulan,tahun}=getPeriod("3"); const periode=`${tahun}-${String(bulan).padStart(2,"0")}`; document.getElementById("anggaranContent").innerHTML=`<div class="loading"><div class="spinner"></div>Memuat…</div>`; try{ const [ra,rt]=await Promise.all([apiGet({action:"getAnggaran",periode}), apiGet({action:"getTransaksi",bulan,tahun})]); renderAnggaran(ra.data||[],rt.data||[]); }catch(e){ document.getElementById("anggaranContent").innerHTML=`<div class="empty"><div class="emoji">⚠️</div><p>${e.message}</p></div>`; } }
 function renderAnggaran(anggaran,transaksi){ const rs={}; transaksi.filter(t=>t.Tipe==="pengeluaran").forEach(t=>{ rs[t.Kategori]=(rs[t.Kategori]||0)+parseFloat(t.Jumlah||0); }); if(!anggaran.length){ document.getElementById("anggaranContent").innerHTML=`<div class="empty"><div class="emoji">📋</div><p>Belum ada anggaran</p></div>`; return; } let html=""; anggaran.forEach(a=>{ const spent=rs[a.Kategori]||0, batas=parseFloat(a.Batas||0), pct=batas>0?Math.round((spent/batas)*100):0; const cls=pct>100?"over":pct>80?"warn":"ok"; html+=`<div class="card budget-item"><div class="head" style="display:flex;justify-content:space-between;"><div class="cn">📦 ${a.Kategori}</div><div class="am">${fmt(spent)} / ${fmt(batas)}</div></div><div class="pb"><div class="fill ${cls}" style="width:${Math.min(pct,100)}%;"></div></div><div style="display:flex;justify-content:space-between;margin-top:5px;"><span style="font-size:11px;">Terpakai ${pct}%</span><span style="font-size:11px;color:${pct>100?'var(--rose)':'var(--text3)'};">${pct>100?'⚠️ Melebihi batas':'Sisa '+fmt(batas-spent)}</span></div></div>`; }); document.getElementById("anggaranContent").innerHTML=html; }
 function openAnggaranModal(){ document.getElementById("angKategori").innerHTML=getKategoriOptions("pengeluaran"); document.getElementById("angBatas").value=""; openModal("anggaranModal"); }
 async function saveAnggaran(){ const {bulan,tahun}=getPeriod("3"); const periode=`${tahun}-${String(bulan).padStart(2,"0")}`; const data={periode, kategori:document.getElementById("angKategori").value, batas:document.getElementById("angBatas").value}; if(!data.batas){ showToast("Masukkan batas anggaran","error"); return; } try{ const res=await apiPost({action:"setAnggaran",data}); if(!res.success) throw new Error(res.message); showToast("Anggaran disimpan ✓","success"); closeModal("anggaranModal"); loadAnggaran(); }catch(e){ showToast(e.message,"error"); } }
-
-// ============================================================
-// LAPORAN & EXPORT
-// ============================================================
 async function loadLaporan(){ const tahun=document.getElementById("selTahunL").value; document.getElementById("laporanContent").innerHTML=`<div class="loading"><div class="spinner"></div>Memuat…</div>`; try{ const res=await apiGet({action:"getLaporan",tahun}); renderLaporan(res.data,tahun); }catch(e){ document.getElementById("laporanContent").innerHTML=`<div class="empty"><div class="emoji">⚠️</div><p>${e.message}</p></div>`; } }
 function renderLaporan(data,tahun) {
   const bln = data.bulanan;
